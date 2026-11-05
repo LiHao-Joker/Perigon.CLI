@@ -310,10 +310,12 @@ public class ModulePackageServiceTests
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var modulesPath = Path.Combine(root, PathConst.ModulesPath);
         var entityPath = Path.Combine(root, PathConst.EntityPath);
+        var entityFrameworkPath = Path.Combine(root, PathConst.EntityFrameworkPath);
         var servicesPath = Path.Combine(root, PathConst.ServicesPath);
 
         Directory.CreateDirectory(Path.Combine(modulesPath, "CMSMod"));
         Directory.CreateDirectory(Path.Combine(entityPath, "CMSMod"));
+        Directory.CreateDirectory(Path.Combine(entityFrameworkPath, "CMSMod"));
         Directory.CreateDirectory(Path.Combine(servicesPath, "AdminService"));
 
         await File.WriteAllTextAsync(
@@ -358,6 +360,7 @@ public class ModulePackageServiceTests
             SolutionPath = root,
             ModulesPath = modulesPath,
             EntityPath = entityPath,
+            EntityFrameworkPath = entityFrameworkPath,
             ServicesPath = servicesPath
         };
 
