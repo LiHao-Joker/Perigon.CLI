@@ -158,6 +158,7 @@ public class ModulePackageServiceTests
         var modulesPath = Path.Combine(root, PathConst.ModulesPath);
         var entityPath = Path.Combine(root, PathConst.EntityPath);
         var servicesPath = Path.Combine(root, PathConst.ServicesPath);
+        var entityFrameworkPath = Path.Combine(root, PathConst.EntityFrameworkPath);
         var frontendProjectPath = Path.Combine(root, "frontend");
         var frontendModulesPath = Path.Combine(frontendProjectPath, PathConst.FrontendModulesPath);
         var frontendPath = Path.Combine(frontendModulesPath, "cms");
@@ -191,6 +192,7 @@ public class ModulePackageServiceTests
                 SolutionPath = root,
                 ModulesPath = modulesPath,
                 EntityPath = entityPath,
+                EntityFrameworkPath = entityFrameworkPath,
                 ServicesPath = servicesPath
             };
             var service = new ModuleInstallService(
