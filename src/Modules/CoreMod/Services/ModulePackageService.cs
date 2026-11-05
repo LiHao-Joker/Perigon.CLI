@@ -395,6 +395,14 @@ public class ModulePackageService(
                 $"{ConstVal.EntityName}/{moduleName}"
             );
 
+            // var Add EntityConfiguration
+            var entityConfigurationModulePath = Path.Combine(_projectContext.EntityFrameworkPath!, moduleName);
+            AddDirectoryToArchive(
+                archive,
+                entityConfigurationModulePath,
+                $"{ConstVal.EntityFrameworkName}/{moduleName}"
+            );
+
             // Add Module files
             var modulePath = Path.Combine(_projectContext.ModulesPath!, moduleName);
             AddDirectoryToArchive(archive, modulePath, $"{ConstVal.ModulesDir}/{moduleName}");
@@ -527,8 +535,11 @@ public class ModulePackageService(
             var relativePath = Path.GetRelativePath(sourceDir, file);
 
             // Skip files that are under 'bin' or 'obj' folders
-            var segments = relativePath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
-            if (segments.Any(s => string.Equals(s, "bin", StringComparison.OrdinalIgnoreCase) || string.Equals(s, "obj", StringComparison.OrdinalIgnoreCase)))
+            var segments = relativePath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+                StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Any(s =>
+                    string.Equals(s, "bin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(s, "obj", StringComparison.OrdinalIgnoreCase)))
             {
                 continue;
             }
