@@ -35,17 +35,39 @@ jobs:
         shell: bash
         run: pwsh --version
 
-      - name: Read package metadata
+      - name: Read package metadata and compute four-part version
         id: package
         shell: pwsh
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           $projectPath = 'src/Apps/CommandLine/CommandLine.csproj'
           $packageId = (Select-Xml -Path $projectPath -XPath '/Project//PackageId').Node.InnerText
-          $version = (Select-Xml -Path $projectPath -XPath '/Project//Version').Node.InnerText
+          $projectVersion = (Select-Xml -Path $projectPath -XPath '/Project//Version').Node.InnerText
 
-          if ([string]::IsNullOrWhiteSpace($packageId) -or [string]::IsNullOrWhiteSpace($version)) {
+          if ([string]::IsNullOrWhiteSpace($packageId) -or [string]::IsNullOrWhiteSpace($projectVersion)) {
               throw "PackageId or Version is missing from $projectPath."
           }
+
+          if ($projectVersion -notmatch '^(\d+)\.(\d+)\.(\d+)') {
+              throw "Version '$projectVersion' does not start with three numeric segments."
+          }
+
+          $major = $Matches[1]
+          $minor = $Matches[2]
+          $patch = $Matches[3]
+          $revision = [int]$env:RUN_NUMBER
+          $version = "$major.$minor.$patch.$revision"
+
+          # 把四段版本写回 csproj，确保后续 PublishToLocal.ps1 / dotnet pack 使用该版本。
+          [xml]$projectXml = Get-Content -LiteralPath $projectPath
+          $versionNode = $projectXml.SelectSingleNode('/Project//Version')
+          if ($null -eq $versionNode) {
+              throw "Version node was not found in $projectPath."
+          }
+          $versionNode.InnerText = $version
+          $fullProjectPath = (Resolve-Path -LiteralPath $projectPath).Path
+          $projectXml.Save($fullProjectPath)
 
           $packagePath = "artifacts/$packageId.$version.nupkg"
           "package_id=$packageId" >> $env:GITHUB_OUTPUT
@@ -121,3 +143,20 @@ jobs:
             --api-key $env:GITHUB_TOKEN `
             --source $source `
             --skip-duplicate
+
+      - name: Install published CLI package
+        shell: pwsh
+        env:
+          PACKAGE_ID: ${{ steps.package.outputs.package_id }}
+          PACKAGE_VERSION: ${{ steps.package.outputs.package_version }}
+          PACKAGE_DIR: ${{ github.workspace }}/artifacts
+        run: |
+          dotnet tool install --global $env:PACKAGE_ID `
+            --version $env:PACKAGE_VERSION `
+            --add-source $env:PACKAGE_DIR
+          if ($LASTEXITCODE -ne 0) {
+              throw "Failed to install $env:PACKAGE_ID $env:PACKAGE_VERSION."
+          }
+
+          Write-Host "Installed global tools:"
+          dotnet tool list --global
