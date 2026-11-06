@@ -239,6 +239,81 @@ public class ModulePackageServiceTests
     }
 
     [Fact]
+    public async Task ExtractPackageAsync_ShouldInstallEntityFrameworkConfiguration()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var entityFrameworkPath = Path.Combine(root, PathConst.EntityFrameworkPath);
+        var servicesPath = Path.Combine(root, PathConst.ServicesPath);
+        var packagePath = Path.Combine(root, "CMSMod.zip");
+        const string configurationContent = "public class ContentEntityConfiguration { }";
+
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(servicesPath, "AdminService"));
+
+            using (var archive = ZipFile.Open(packagePath, ZipArchiveMode.Create))
+            {
+                await WriteArchiveEntryAsync(
+                    archive,
+                    "metadata.json",
+                    JsonSerializer.Serialize(new PackageMetadata { ModuleName = "CMSMod" })
+                );
+                await WriteArchiveEntryAsync(
+                    archive,
+                    "EntityFramework/CMSMod/Configurations/ContentEntityConfiguration.cs",
+                    configurationContent
+                );
+            }
+
+            var context = new SolutionContext(new ServiceCollection().BuildServiceProvider())
+            {
+                SolutionPath = root,
+                EntityFrameworkPath = entityFrameworkPath,
+                ServicesPath = servicesPath
+            };
+            var service = new ModuleInstallService(
+                context,
+                CreateLocalizer(),
+                NullLogger<ModuleInstallService>.Instance,
+                null!,
+                null!
+            );
+            var extractMethod = typeof(ModuleInstallService).GetMethod(
+                "ExtractPackageAsync",
+                BindingFlags.Instance | BindingFlags.NonPublic
+            );
+            Assert.NotNull(extractMethod);
+
+            var task = (Task<PackageMetadata?>)extractMethod!.Invoke(
+                service,
+                [packagePath, "AdminService", null]
+            )!;
+            var metadata = await task;
+
+            Assert.NotNull(metadata);
+            Assert.Equal(
+                configurationContent,
+                await File.ReadAllTextAsync(
+                    Path.Combine(
+                        entityFrameworkPath,
+                        "CMSMod",
+                        "Configurations",
+                        "ContentEntityConfiguration.cs"
+                    ),
+                    TestContext.Current.CancellationToken
+                )
+            );
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task ExtractPackageAsync_ShouldRejectFrontendProjectWithoutAppModulesDirectory()
     {
         var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

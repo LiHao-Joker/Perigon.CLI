@@ -481,6 +481,21 @@ public class ModuleInstallService(
                 CopyDirectory(entitySourceDir, entityTargetDir);
             }
 
+            // Install EntityFramework files
+            var entityFrameworkSourceDir = Path.Combine(
+                tempDir,
+                ConstVal.EntityFrameworkName,
+                metadata.ModuleName
+            );
+            if (Directory.Exists(entityFrameworkSourceDir))
+            {
+                var entityFrameworkTargetDir = Path.Combine(
+                    _projectContext.EntityFrameworkPath!,
+                    metadata.ModuleName
+                );
+                CopyDirectory(entityFrameworkSourceDir, entityFrameworkTargetDir);
+            }
+
             // Install Module files
             var moduleSourceDir = Path.Combine(tempDir, ConstVal.ModulesDir, metadata.ModuleName);
             if (Directory.Exists(moduleSourceDir))
